@@ -3,14 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ordiscan UTXO Viewer</title>
+    <title>Ordiscan API Viewer</title>
 </head>
 <body>
-    <h1>Ordiscan UTXO Viewer</h1>
-    <form id="address-form">
+    <h1>Ordiscan API Viewer</h1>
+    <form id="api-form">
         <label for="address">Bitcoin Address:</label>
         <input type="text" id="address" name="address" placeholder="Enter address" required>
-        <button type="submit">Get UTXOs</button>
+        
+        <label for="endpoint">Select API Endpoint:</label>
+        <select id="endpoint" name="endpoint" required>
+            <option value="getUtxos">Get UTXOs</option>
+            <option value="getInscriptions">Get Inscriptions</option>
+            <option value="getRunes">Get Runes</option>
+            <option value="getBrc20Tokens">Get BRC-20 Tokens</option>
+        </select>
+        
+        <button type="submit">Fetch Data</button>
     </form>
     <pre id="results"></pre>
     <script src="script.js"></script>
