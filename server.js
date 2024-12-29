@@ -1,9 +1,10 @@
 const express = require('express');
 const { Ordiscan } = require('ordiscan');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
-const ordiscan = new Ordiscan('9e26b3eb-0a7a-4e4b-be6b-667ec19cbcd8');
+const ordiscan = new Ordiscan(process.env.ORDISCAN_API_KEY);
 
 // Serve static files from the "public" folder
 app.use(express.static('public'));
