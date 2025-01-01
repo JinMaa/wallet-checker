@@ -4,27 +4,24 @@ const xlsx = require('xlsx');
 const { Ordiscan } = require('ordiscan');
 require('dotenv').config();
 
-const ordiscan = new Ordiscan('process.env.ORDISCAN_API_KEY');
+const ordiscan = new Ordiscan(process.env.ORDISCAN_API_KEY);
 
 // Configuration
 const WALLET_LIST = process.env.WALLET_LIST.split(',').map(wallet => wallet.trim());
 const QUERY_INTERVAL = 60 * 60 * 1000; // 1 hour in milliseconds
-const OUTPUT_FILE = path.join(__dirname, 'wallet_data.xlsx');
+const OUTPUT_FILE = path.join(__dirname, 'data', 'wallet_data.xlsx');
 
 // Function to fetch data for a wallet
 async function fetchWalletData(address) {
     try {
-        const utxos = await ordiscan.address.getUtxos({ address });
-        const inscriptions = await ordiscan.address.getInscriptions({ address });
+        // Fetching BRC20 tokens and Runes
         const runes = await ordiscan.address.getRunes({ address });
         const brc20Tokens = await ordiscan.address.getBrc20Tokens({ address });
 
         return {
             address,
-            utxos: JSON.stringify(utxos),
-            inscriptions: JSON.stringify(inscriptions),
-            runes: JSON.stringify(runes),
-            brc20Tokens: JSON.stringify(brc20Tokens),
+            runes,
+            brc20Tokens
         };
     } catch (error) {
         console.error(`Error fetching data for wallet ${address}:`, error.message);
@@ -32,7 +29,7 @@ async function fetchWalletData(address) {
     }
 }
 
-// Function to write data to Excel
+// Function to process and write rows for Runes and BRC20 tokens to Excel
 function writeToExcel(data) {
     let workbook;
 
@@ -44,8 +41,47 @@ function writeToExcel(data) {
     }
 
     const sheetName = 'Wallet Data';
-    const worksheet = xlsx.utils.json_to_sheet(data, {
-        header: ['address', 'utxos', 'inscriptions', 'runes', 'brc20Tokens', 'error'],
+    let allRows = [];
+
+    // Iterate through each wallet data
+    data.forEach(walletData => {
+        // Add rows for Runes
+        if (walletData.runes && walletData.runes.length > 0) {
+            walletData.runes.forEach(rune => {
+                allRows.push({
+                    wallet: walletData.address,
+                    type: 'Rune',
+                    name: rune.name,
+                    balance: rune.balance
+                });
+            });
+        }
+
+        // Add rows for BRC20 tokens
+        if (walletData.brc20Tokens && walletData.brc20Tokens.length > 0) {
+            walletData.brc20Tokens.forEach(token => {
+                allRows.push({
+                    wallet: walletData.address,
+                    type: 'BRC20 Token',
+                    tick: token.tick,
+                    balance: token.balance
+                });
+            });
+        }
+
+        // If there's an error, include it as a row
+        if (walletData.error) {
+            allRows.push({
+                wallet: walletData.address,
+                type: 'Error',
+                message: walletData.error
+            });
+        }
+    });
+
+    // Convert all rows to a worksheet
+    const worksheet = xlsx.utils.json_to_sheet(allRows, {
+        header: ['wallet', 'type', 'name', 'balance', 'tick', 'message'],
     });
 
     xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
